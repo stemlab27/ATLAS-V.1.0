@@ -1,0 +1,6 @@
+{
+  "name": "ATLAS",
+  "description": "Aerospace Monitoring & Cybersecurity Threat Intelligence Platform bridging NASA space weather telemetry with digital infrastructure defense.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
