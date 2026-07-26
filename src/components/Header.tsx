@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Shield, RefreshCw, Radio, HardDrive, Cpu, Smartphone, Monitor, Github, Copy, Check, Download, ExternalLink, X } from 'lucide-react';
+import { Shield, RefreshCw, Radio, HardDrive, Cpu, Smartphone, Monitor, Github, Copy, Check, Download, ExternalLink, X, Video, User as UserIcon, LogIn } from 'lucide-react';
+import { User } from 'firebase/auth';
 
 export type ViewProfile = 'DESKTOP' | 'MOBILE' | 'PI_KIOSK';
 
@@ -12,6 +13,9 @@ interface HeaderProps {
   isSyncing: boolean;
   onForceSync: () => void;
   pendingLogsCount: number;
+  onOpenJudgeVideo?: () => void;
+  currentUser?: User | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +27,9 @@ export const Header: React.FC<HeaderProps> = ({
   isSyncing,
   onForceSync,
   pendingLogsCount,
+  onOpenJudgeVideo,
+  currentUser,
+  onOpenAuthModal,
 }) => {
   const [showGithubModal, setShowGithubModal] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
@@ -44,9 +51,19 @@ git remote add origin https://github.com/YOUR_USERNAME/ATLAS-Aerospace-Platform.
 git push -u origin main`;
 
   const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCmd(label);
-    setTimeout(() => setCopiedCmd(null), 2000);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedCmd(label);
+        setTimeout(() => setCopiedCmd(null), 2000);
+      }).catch((err) => {
+        console.warn("Clipboard write failed:", err);
+        setCopiedCmd(label);
+        setTimeout(() => setCopiedCmd(null), 2000);
+      });
+    } else {
+      setCopiedCmd(label);
+      setTimeout(() => setCopiedCmd(null), 2000);
+    }
   };
 
   return (
@@ -136,6 +153,40 @@ git push -u origin main`;
 
         {/* Live System Status Telemetry & GitHub Export */}
         <div className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-wider flex-wrap justify-end">
+          {/* Judge Video Pitch Button */}
+          {onOpenJudgeVideo && (
+            <button
+              onClick={onOpenJudgeVideo}
+              className="flex items-center gap-1.5 bg-[#00f3ff]/20 hover:bg-[#00f3ff]/30 border border-[#00f3ff] text-[#00f3ff] px-3 py-1 rounded text-xs font-bold transition-all shadow-[0_0_15px_rgba(0,243,255,0.4)] cursor-pointer animate-pulse"
+              title="Open Interactive Video Pitch & Audio Presentation for Judges"
+            >
+              <Video className="w-4 h-4 text-[#00f3ff]" />
+              <span>🎥 PITCH VIDEO FOR JUDGES</span>
+            </button>
+          )}
+
+          {/* Operator Sign In / Authentication Button */}
+          {onOpenAuthModal && (
+            <button
+              onClick={onOpenAuthModal}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer border ${
+                currentUser 
+                  ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500/60 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                  : 'bg-[#00f3ff]/10 hover:bg-[#00f3ff]/20 border-[#00f3ff]/60 text-[#00f3ff]'
+              }`}
+              title={currentUser ? `Signed in as ${currentUser.email || 'Operator'}` : "Sign In / Register"}
+            >
+              {currentUser?.photoURL ? (
+                <img src={currentUser.photoURL} alt="" className="w-4 h-4 rounded-full" />
+              ) : currentUser ? (
+                <UserIcon className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <LogIn className="w-4 h-4 text-[#00f3ff]" />
+              )}
+              <span>{currentUser ? (currentUser.displayName || currentUser.email?.split('@')[0] || 'COMMANDER').toUpperCase() : 'SIGN IN'}</span>
+            </button>
+          )}
+
           {/* GitHub Export Helper */}
           <button
             onClick={() => setShowGithubModal(true)}

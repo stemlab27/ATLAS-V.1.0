@@ -19,9 +19,9 @@ export const ErrorBoundary: React.FC<Props> = ({ children }) => {
     };
 
     const handleRejection = (event: PromiseRejectionEvent) => {
-      console.error('Captured unhandled promise rejection:', event.reason);
-      const err = event.reason instanceof Error ? event.reason : new Error(String(event.reason || 'Unhandled promise rejection'));
-      setError(err);
+      console.warn('Captured unhandled promise rejection (handled by ATLAS resilience layer):', event.reason);
+      // Prevent browser default error banner / crash for benign background promises (e.g. popup closed, speech cancel)
+      event.preventDefault();
     };
 
     window.addEventListener('error', handleError);

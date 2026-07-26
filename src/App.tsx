@@ -6,16 +6,22 @@ import { OrbitalThreatMap } from './components/OrbitalThreatMap';
 import { ResearchHub } from './components/ResearchHub';
 import { FieldIncidentLogger } from './components/FieldIncidentLogger';
 import { PiKioskHUD } from './components/PiKioskHUD';
+import { JudgeVideoPresentation } from './components/JudgeVideoPresentation';
+import { AuthModal } from './components/AuthModal';
 
 import { fetchSolarFlares, fetchCMEs, fetchNTRSReports, SolarFlare, CoronalMassEjection, NTRSReport } from './services/nasaApi';
 import { ThreatReport, generateThreatIntelligenceReport } from './services/geminiSynthesis';
 import { useOfflineSyncManager } from './services/offlineSync';
 import { FieldLogEntry, subscribeToFieldLogs } from './firebase';
+import { User } from 'firebase/auth';
 
 import { Shield, Radio, Cpu, Sparkles, HardDrive, WifiOff } from 'lucide-react';
 
 export default function App() {
   const [viewProfile, setViewProfile] = useState<ViewProfile>('DESKTOP');
+  const [showJudgeVideo, setShowJudgeVideo] = useState<boolean>(false);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Services & State
   const syncManager = useOfflineSyncManager();
@@ -94,6 +100,23 @@ export default function App() {
         isSyncing={syncManager.isSyncing}
         onForceSync={syncManager.forceReSync}
         pendingLogsCount={syncManager.pendingLogsCount}
+        onOpenJudgeVideo={() => setShowJudgeVideo(true)}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setShowAuthModal(true)}
+      />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        currentUser={currentUser}
+        setCurrentUser={setCurrentUser}
+      />
+
+      {/* Judge Interactive Video & Audio Presentation Modal */}
+      <JudgeVideoPresentation
+        isOpen={showJudgeVideo}
+        onClose={() => setShowJudgeVideo(false)}
       />
 
       {/* Main Container */}
@@ -193,6 +216,7 @@ export default function App() {
                   logs={fieldLogs}
                   isOnline={syncManager.isOnline}
                   onLogSaved={syncManager.forceReSync}
+                  currentUser={currentUser}
                 />
               </div>
 

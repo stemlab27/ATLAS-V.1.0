@@ -32,9 +32,19 @@ export const AISynthesis: React.FC<AISynthesisProps> = ({
   };
 
   const copyToClipboard = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      }).catch((err) => {
+        console.warn("Clipboard write failed:", err);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      });
+    } else {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }
   };
 
   if (!report) {

@@ -69,7 +69,12 @@ app.post("/api/gemini/synthesize", async (req, res) => {
         }
       } catch (modelErr: any) {
         lastErrorMsg = modelErr?.message || String(modelErr);
-        console.warn(`[ATLAS Gemini] Attempt with model '${model}' failed: ${lastErrorMsg}`);
+        const isQuotaErr = lastErrorMsg.includes("429") || lastErrorMsg.includes("RESOURCE_EXHAUSTED");
+        if (isQuotaErr) {
+          console.warn(`[ATLAS Gemini] Model '${model}' free tier rate limit reached. Retrying with alternate model...`);
+        } else {
+          console.warn(`[ATLAS Gemini] Model '${model}' request attempt failed: ${lastErrorMsg.slice(0, 120)}...`);
+        }
       }
     }
 

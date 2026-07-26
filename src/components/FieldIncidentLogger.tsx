@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FieldLogEntry, saveFieldLog } from '../firebase';
-import { Send, ShieldAlert, CheckCircle, Clock, Smartphone, HardDrive } from 'lucide-react';
+import { Send, ShieldAlert, CheckCircle, Clock, Smartphone, HardDrive, UserCheck } from 'lucide-react';
+import { User } from 'firebase/auth';
 
 interface FieldIncidentLoggerProps {
   logs: FieldLogEntry[];
   isOnline: boolean;
   onLogSaved: () => void;
+  currentUser?: User | null;
 }
 
 export const FieldIncidentLogger: React.FC<FieldIncidentLoggerProps> = ({
   logs,
   isOnline,
   onLogSaved,
+  currentUser,
 }) => {
   const [operator, setOperator] = useState<string>('Operator-Sentinel-1');
+
+  useEffect(() => {
+    if (currentUser) {
+      setOperator(currentUser.displayName || currentUser.email?.split('@')[0] || 'COMMANDER');
+    }
+  }, [currentUser]);
   const [severity, setSeverity] = useState<FieldLogEntry['severity']>('ELEVATED');
   const [category, setCategory] = useState<FieldLogEntry['category']>('CYBER_DEFENSE');
   const [message, setMessage] = useState<string>('');

@@ -6,24 +6,37 @@ import {
   persistentMultipleTabManager,
   collection, 
   addDoc, 
-  getDocs, 
   query, 
   orderBy, 
   limit, 
   onSnapshot,
   Timestamp 
 } from 'firebase/firestore';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  User 
+} from 'firebase/auth';
+
+import firebaseConfigJson from '../firebase-applet-config.json';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBFBZ-QpyTmDthy-mQJZ7_p1i_xPRzmUX8",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "atlas-c2a97.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "atlas-c2a97",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "atlas-c2a97.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "756647604172",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:756647604172:web:b342e3459267ac30d87769"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigJson.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigJson.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigJson.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigJson.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigJson.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigJson.appId
 };
 
-// Initialize Firebase safely with full fault tolerance
+const databaseId = firebaseConfigJson.firestoreDatabaseId || undefined;
+
+// Initialize Firebase safely
 let app: ReturnType<typeof initializeApp> | undefined;
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -31,27 +44,70 @@ try {
   console.warn('Firebase initializeApp warning:', err);
 }
 
-// Initialize Firestore with persistent offline caching fallback
+// Initialize Firestore
 let db: ReturnType<typeof getFirestore> | null = null;
-
 if (app) {
   try {
-    db = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
-    });
-  } catch (e1) {
+    if (databaseId) {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
+      }, databaseId);
+    } else {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
+      });
+    }
+  } catch {
     try {
-      db = getFirestore(app);
+      db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
     } catch (e2) {
-      console.warn('Firestore initialization failed, falling back to local offline mode:', e2);
+      console.warn('Firestore initialization fallback:', e2);
       db = null;
     }
   }
 }
 
+// Initialize Auth
+export const auth = app ? getAuth(app) : null;
+export const googleProvider = new GoogleAuthProvider();
+
 export { db };
+
+// Auth helper functions
+export async function loginWithGoogle() {
+  if (!auth) throw new Error("Firebase Auth not initialized");
+  const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
+}
+
+export async function loginWithEmail(email: string, pass: string) {
+  if (!auth) throw new Error("Firebase Auth not initialized");
+  const result = await signInWithEmailAndPassword(auth, email, pass);
+  return result.user;
+}
+
+export async function registerWithEmail(email: string, pass: string) {
+  if (!auth) throw new Error("Firebase Auth not initialized");
+  const result = await createUserWithEmailAndPassword(auth, email, pass);
+  return result.user;
+}
+
+export async function logoutUser() {
+  if (!auth) return;
+  await signOut(auth);
+}
+
+export function subscribeToAuth(callback: (user: User | null) => void) {
+  if (!auth) {
+    callback(null);
+    return () => {};
+  }
+  return onAuthStateChanged(auth, callback);
+}
 
 export interface FieldLogEntry {
   id?: string;
@@ -179,3 +235,4 @@ export function subscribeToFieldLogs(callback: (logs: FieldLogEntry[]) => void) 
     return () => {};
   }
 }
+
