@@ -42,7 +42,7 @@ app.post("/api/gemini/synthesize", async (req, res) => {
     });
     
     // Try primary models in sequence with fallback
-    const candidateModels = ["gemini-3.6-flash", "gemini-3.6-pro"];
+    const candidateModels = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
     let lastErrorMsg = "";
 
     for (const model of candidateModels) {
